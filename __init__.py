@@ -25,7 +25,7 @@ bl_info = {
      "description": "Makes a series of cross-sections and exports an svg file for laser cutting",
      "warning": "",
      "wiki_url": "tba",
-     "tracker_url": "",
+     "tracker_url": "https://github.com/rgsouthall/laser_slicer/issues",
      "category": "Object"}
 
 import bpy, os, bmesh, numpy
@@ -299,7 +299,7 @@ class OBJECT_OT_Laser_Slicer(bpy.types.Operator):
     bl_label = "Laser Slicer"
 
     def execute(self, context):
-        if not bpy.data.filepath and not context.scene.slicer_settings_ofile:
+        if not bpy.data.filepath and not context.scene.slicer_settings.laser_slicer_ofile:
             self.report({'ERROR'},"Make sure you have saved the blender file or provided an export file name")
             return {'CANCELLED'}
         
