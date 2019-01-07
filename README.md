@@ -1,2 +1,2 @@
 # laser_slicer
-Laser slicer script for Blender 2.8
+Laser slicer add-on for Blender 2.8
