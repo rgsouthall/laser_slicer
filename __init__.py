@@ -57,8 +57,8 @@ def slicer(settings):
     ct = settings.laser_slicer_cut_thickness/f_scale
     svgpos = settings.laser_slicer_svg_position
     dpi = settings.laser_slicer_dpi
-    i = 0
     yrowpos = 0
+    xmaxlast = 0
     ofile = settings.laser_slicer_ofile
     mm2pi = dpi/25.4
     scale = f_scale*mm2pi
@@ -217,36 +217,45 @@ def slicer(settings):
         cysize = ymax - ymin + ct
         cxsize = xmax - xmin + ct
                 
-        if (sepfile and svgpos == '0') or (not sepfile and i == 0) or (sepfile and i == 0 and svgpos == '1'):
+        if (sepfile and svgpos == '0') or (sepfile and vci == 0 and svgpos == '1'):
             xdiff = -xmin + ct
             ydiff = -ymin + ct
-            xmaxlast = cxsize
 
-        elif (sepfile and svgpos == '1') or not sepfile:
+        elif (sepfile and svgpos == '1') or not sepfile:            
             if f_scale * (xmaxlast + cxsize) <= mwidth:
                 xdiff = xmaxlast - xmin + ct
-                xmaxlast += cxsize
                 ydiff = yrowpos - ymin + ct
-    
+                
                 if rysize < cysize:
                     rysize = cysize
+                
+                xmaxlast += cxsize
+                                
+            elif f_scale * cxsize > mwidth:
+                xdiff = -xmin + ct
+                ydiff = yrowpos - ymin + ct
+                yrowpos += cysize
+                if rysize < cysize:
+                    rysize = cysize
+                
+                xmaxlast = cxsize
+                rysize = cysize
     
             else:
-                xmaxlast = cxsize
-                xdiff = -xmin + ct
                 yrowpos += rysize
+                xdiff = -xmin + ct
                 ydiff = yrowpos - ymin + ct
-                rysize = 0
+                xmaxlast = cxsize
+                rysize = cysize
     
         elif sepfile and svgpos == '2':
-            xdiff = (0.0005 * mwidth) - (0.5 * cxsize) - xmin
-            ydiff = (0.0005 * mheight) - (0.5 * cysize) - ymin
+            xdiff = mwidth/(2 * f_scale) - (0.5 * cxsize) - xmin
+            ydiff = mheight/(2 * f_scale) - (0.5 * cysize) - ymin
                
         if not accuracy:
             svgtext += '<g>\n'
             svgtext += "".join(['<line x1="{0[0][0]}" y1="{0[0][1]}" x2="{0[1][0]}" y2="{0[1][1]}" style="stroke:rgb({1[0]},{1[1]},{1[2]});stroke-width:{2}" />\n'.format([(scale * (xdiff + v[0]), scale * (ydiff + v[1])) for v in e], [int(255 * lc) for lc in lcol], lthick) for e in etlist[vci]])
             svgtext += '</g>\n'
-            i = 1
         else:
             points = "{:.3f},{:.3f} {:.3f},{:.3f} ".format(scale*(xdiff+vclist[0][0]), scale*(ydiff+vclist[0][1]), scale*(xdiff+vclist[1][0]), scale*(ydiff+vclist[1][1]))
             svgtext += '<g>\n'
@@ -263,8 +272,7 @@ def slicer(settings):
                 svgtext += '<polygon points="{0}" style="fill:none;stroke:rgb({1[0]},{1[1]},{1[2]});stroke-width:{2}" />\n'.format(points, [int(255 * lc) for lc in lcol], lthick)
              
             svgtext += '</g>\n'          
-            i = 1
-             
+
         if sepfile:
             svgtext += '</svg>\n' 
             
@@ -299,9 +307,9 @@ class OBJECT_OT_Laser_Slicer(bpy.types.Operator):
     bl_label = "Laser Slicer"
 
     def execute(self, context):
-        if not bpy.data.filepath and not context.scene.slicer_settings.laser_slicer_ofile:
-            self.report({'ERROR'},"Make sure you have saved the blender file or provided an export file name")
-            return {'CANCELLED'}
+#        if not bpy.data.filepath and not context.scene.slicer_settings.laser_slicer_ofile:
+#            self.report({'ERROR'},"Make sure you have saved the blender file or provided an export file name")
+#            return {'CANCELLED'}
         
         slicer(context.scene.slicer_settings)
         return {'FINISHED'}
@@ -339,10 +347,11 @@ class OBJECT_OT_Laser_Slicer_Panel(bpy.types.Panel):
         if context.active_object and context.active_object.select_get() and context.active_object.type == 'MESH' and context.active_object.data.polygons:
             row = layout.row()
             row.label(text = 'No. of slices : {:.0f}'.format(context.active_object.dimensions[2] * 1000 * context.scene.unit_settings.scale_length/scene.slicer_settings.laser_slicer_material_thick))
-
-            split = layout.split()
-            col = split.column()
-            col.operator("object.laser_slicer", text="Slice the object")
+            
+            if bpy.data.filepath or context.scene.slicer_settings.laser_slicer_ofile:
+                split = layout.split()
+                col = split.column()
+                col.operator("object.laser_slicer", text="Slice the object")
 
 class Slicer_Settings(bpy.types.PropertyGroup):   
     laser_slicer_material_thick: FloatProperty(
