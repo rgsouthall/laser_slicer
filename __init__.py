@@ -307,10 +307,6 @@ class OBJECT_OT_Laser_Slicer(bpy.types.Operator):
     bl_label = "Laser Slicer"
 
     def execute(self, context):
-#        if not bpy.data.filepath and not context.scene.slicer_settings.laser_slicer_ofile:
-#            self.report({'ERROR'},"Make sure you have saved the blender file or provided an export file name")
-#            return {'CANCELLED'}
-        
         slicer(context.scene.slicer_settings)
         return {'FINISHED'}
 
