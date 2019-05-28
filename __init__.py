@@ -40,11 +40,11 @@ def slicer(settings):
     f_scale = 1000 * bpy.context.scene.unit_settings.scale_length
     aob = bpy.context.active_object
     bm = bmesh.new()
-    tempmesh = aob.to_mesh(bpy.context.depsgraph, apply_modifiers = True, calc_undeformed=False)
+    tempmesh = aob.to_mesh()
     bm.from_mesh(tempmesh)
     omw = aob.matrix_world
     bm.transform(omw)
-    bpy.data.meshes.remove(tempmesh)
+    aob.to_mesh_clear()
     aob.select_set(False)
     mwidth = settings.laser_slicer_material_width
     mheight = settings.laser_slicer_material_height
@@ -302,17 +302,15 @@ def slicer(settings):
     bpy.context.view_layer.objects.active = aob
         
 class OBJECT_OT_Laser_Slicer(bpy.types.Operator):
-    ''''''
-    bl_idname = "object.laser_slicer"
     bl_label = "Laser Slicer"
+    bl_idname = "object.laser_slicer"
 
     def execute(self, context):
         slicer(context.scene.slicer_settings)
         return {'FINISHED'}
 
-class OBJECT_OT_Laser_Slicer_Panel(bpy.types.Panel):
+class OBJECT_PT_Laser_Slicer_Panel(bpy.types.Panel):
     bl_label = "Laser Slicer Panel"
-    bl_idname = "object.laser_slicer_panel"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -372,7 +370,7 @@ class Slicer_Settings(bpy.types.PropertyGroup):
     laser_slicer_cut_colour: FloatVectorProperty(size = 3, name = "", attr = "Lini colour", default = [1.0, 0.0, 0.0], subtype ='COLOR', min = 0, max = 1)
     laser_slicer_cut_line: FloatProperty(name="", description="Thickness of the svg line (pixels)", min=0, max=5, default=1)
 
-classes = (OBJECT_OT_Laser_Slicer_Panel, OBJECT_OT_Laser_Slicer, Slicer_Settings)
+classes = (OBJECT_PT_Laser_Slicer_Panel, OBJECT_OT_Laser_Slicer, Slicer_Settings)
 
 def register():
     for cl in classes:
