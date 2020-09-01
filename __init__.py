@@ -37,14 +37,15 @@ def newrow(layout, s1, root, s2):
     row.prop(root, s2)
     
 def slicer(settings):
+    dp = bpy.context.evaluated_depsgraph_get()
     f_scale = 1000 * bpy.context.scene.unit_settings.scale_length
     aob = bpy.context.active_object
     bm = bmesh.new()
-    tempmesh = aob.to_mesh(bpy.context.depsgraph, apply_modifiers = True, calc_undeformed=False)
+    tempmesh = aob.evaluated_get(dp).to_mesh()
     bm.from_mesh(tempmesh)
     omw = aob.matrix_world
     bm.transform(omw)
-    bpy.data.meshes.remove(tempmesh)
+    aob.evaluated_get(dp).to_mesh_clear()
     aob.select_set(False)
     mwidth = settings.laser_slicer_material_width
     mheight = settings.laser_slicer_material_height
@@ -199,7 +200,10 @@ def slicer(settings):
             etlist.append([elist]) 
     
     if not sepfile:
-        filename = os.path.join(os.path.dirname(bpy.data.filepath), aob.name+'.svg') if not ofile else bpy.path.abspath(ofile)
+        if os.path.isdir(bpy.path.abspath(ofile)):
+            filename = os.path.join(bpy.path.abspath(ofile), aob.name+'.svg')
+        else:
+            filename = os.path.join(os.path.dirname(bpy.data.filepath), aob.name+'.svg') if not ofile else bpy.path.abspath(ofile)
     else:
         if not ofile:
             filenames = [os.path.join(os.path.dirname(bpy.path.abspath(bpy.data.filepath)), aob.name+'{}.svg'.format(i)) for i in range(len(vlenlist))]
@@ -257,7 +261,7 @@ def slicer(settings):
             svgtext += "".join(['<line x1="{0[0][0]}" y1="{0[0][1]}" x2="{0[1][0]}" y2="{0[1][1]}" style="stroke:rgb({1[0]},{1[1]},{1[2]});stroke-width:{2}" />\n'.format([(scale * (xdiff + v[0]), scale * (ydiff + v[1])) for v in e], [int(255 * lc) for lc in lcol], lthick) for e in etlist[vci]])
             svgtext += '</g>\n'
         else:
-            points = "{:.3f},{:.3f} {:.3f},{:.3f} ".format(scale*(xdiff+vclist[0][0]), scale*(ydiff+vclist[0][1]), scale*(xdiff+vclist[1][0]), scale*(ydiff+vclist[1][1]))
+            points = "{:.4f},{:.4f} {:.4f},{:.4f} ".format(scale*(xdiff+vclist[0][0]), scale*(ydiff+vclist[0][1]), scale*(xdiff+vclist[1][0]), scale*(ydiff+vclist[1][1]))
             svgtext += '<g>\n'
             
             for vco in vclist[2:]:
@@ -266,7 +270,7 @@ def slicer(settings):
                     svgtext += '<poly{0} points="{1}" style="fill:none;stroke:rgb({2[0]},{2[1]},{2[2]});stroke-width:{3}" />\n'.format(polyend, points, [int(255 * lc) for lc in lcol], lthick)
                     points = '' 
                 else:
-                    points += "{:.2f},{:.2f} ".format(scale*(xdiff+vco[0]), scale*(ydiff+vco[1]))
+                    points += "{:.4f},{:.4f} ".format(scale*(xdiff+vco[0]), scale*(ydiff+vco[1]))
              
             if points:
                 svgtext += '<polygon points="{0}" style="fill:none;stroke:rgb({1[0]},{1[1]},{1[2]});stroke-width:{2}" />\n'.format(points, [int(255 * lc) for lc in lcol], lthick)
@@ -284,6 +288,7 @@ def slicer(settings):
                 svgfile.write(svgtext)
         
     if not sepfile:
+        
         with open(filename, 'w') as svgfile:
             svgfile.write('<?xml version="1.0"?>\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n\
                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1"\n    width="{0}"\n    height="{1}"\n    viewbox="0 0 {0} {1}">\n\
