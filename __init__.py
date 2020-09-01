@@ -205,10 +205,13 @@ def slicer(settings):
         else:
             filename = os.path.join(os.path.dirname(bpy.data.filepath), aob.name+'.svg') if not ofile else bpy.path.abspath(ofile)
     else:
-        if not ofile:
-            filenames = [os.path.join(os.path.dirname(bpy.path.abspath(bpy.data.filepath)), aob.name+'{}.svg'.format(i)) for i in range(len(vlenlist))]
+        if os.path.isdir(bpy.path.abspath(ofile)):
+            filenames = [os.path.join(bpy.path.abspath(ofile), aob.name+'{}.svg'.format(i)) for i in range(len(vlenlist))]
         else:
-            filenames = [os.path.join(os.path.dirname(bpy.path.abspath(ofile)), bpy.path.display_name_from_filepath(ofile) + '{}.svg'.format(i)) for i in range(len(vlenlist))]
+            if not ofile:
+                filenames = [os.path.join(os.path.dirname(bpy.path.abspath(bpy.data.filepath)), aob.name+'{}.svg'.format(i)) for i in range(len(vlenlist))]
+            else:
+                filenames = [os.path.join(os.path.dirname(bpy.path.abspath(ofile)), bpy.path.display_name_from_filepath(ofile) + '{}.svg'.format(i)) for i in range(len(vlenlist))]
 
     for vci, vclist in enumerate(vtlist):
         if sepfile or vci == 0:
@@ -307,17 +310,15 @@ def slicer(settings):
     bpy.context.view_layer.objects.active = aob
         
 class OBJECT_OT_Laser_Slicer(bpy.types.Operator):
-    ''''''
-    bl_idname = "object.laser_slicer"
     bl_label = "Laser Slicer"
+    bl_idname = "object.laser_slicer"
 
     def execute(self, context):
         slicer(context.scene.slicer_settings)
         return {'FINISHED'}
 
-class OBJECT_OT_Laser_Slicer_Panel(bpy.types.Panel):
+class OBJECT_PT_Laser_Slicer_Panel(bpy.types.Panel):
     bl_label = "Laser Slicer Panel"
-    bl_idname = "object.laser_slicer_panel"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -377,7 +378,7 @@ class Slicer_Settings(bpy.types.PropertyGroup):
     laser_slicer_cut_colour: FloatVectorProperty(size = 3, name = "", attr = "Lini colour", default = [1.0, 0.0, 0.0], subtype ='COLOR', min = 0, max = 1)
     laser_slicer_cut_line: FloatProperty(name="", description="Thickness of the svg line (pixels)", min=0, max=5, default=1)
 
-classes = (OBJECT_OT_Laser_Slicer_Panel, OBJECT_OT_Laser_Slicer, Slicer_Settings)
+classes = (OBJECT_PT_Laser_Slicer_Panel, OBJECT_OT_Laser_Slicer, Slicer_Settings)
 
 def register():
     for cl in classes:
